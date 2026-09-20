@@ -12,6 +12,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.cas.data.model.CaseStatus
+import com.example.cas.ui.home.HomeCaseItem
 import com.example.cas.ui.home.HomeScreen
 import com.example.cas.ui.home.HomeUiState
 
@@ -21,20 +23,22 @@ fun CasApp() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
+    val navigateToTab: (String) -> Unit = { route ->
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     Scaffold(
         bottomBar = {
             if (bottomDestinations.any { it.route == currentRoute }) {
                 CasBottomBar(
                     currentRoute = currentRoute,
-                    onNavigate = { route ->
-                        navController.navigate(route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
+                    onNavigate = navigateToTab
                 )
             }
         }
@@ -45,7 +49,22 @@ fun CasApp() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Routes.HOME) {
-                HomeScreen(state = HomeUiState(activeCases = 12, interviews = 28, conclusions = 4))
+                // Datos provisionales: se reemplazan por el ViewModel en el paso 7
+                HomeScreen(
+                    state = HomeUiState(
+                        activeCases = 12,
+                        interviews = 28,
+                        conclusions = 4,
+                        investigatingCases = listOf(
+                            HomeCaseItem(1, "Red de sobornos en obra pública", "12 mar 2025", 4, CaseStatus.INVESTIGATING),
+                            HomeCaseItem(2, "Homicidio en zona industrial", "20 feb 2025", 1, CaseStatus.INVESTIGATING)
+                        )
+                    ),
+                    onNewCase = { navController.navigate(Routes.NEW_CASE) },
+                    onNewInterview = { navController.navigate(Routes.NEW_INTERVIEW) },
+                    onCaseClick = { caseId -> navController.navigate(Routes.caseDetail(caseId)) },
+                    onSeeAllCases = { navigateToTab(Routes.CASES) }
+                )
             }
             composable(Routes.CASES) { PlaceholderScreen("Casos") }
             composable(Routes.SETTINGS) { PlaceholderScreen("Ajustes") }
