@@ -5,6 +5,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -12,10 +14,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.cas.data.model.CaseStatus
-import com.example.cas.ui.home.HomeCaseItem
 import com.example.cas.ui.home.HomeScreen
-import com.example.cas.ui.home.HomeUiState
+import com.example.cas.ui.home.HomeViewModel
 
 @Composable
 fun CasApp() {
@@ -49,17 +49,11 @@ fun CasApp() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Routes.HOME) {
-                // Datos provisionales: se reemplazan por el ViewModel en el paso 7
+                val viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
+                val state by viewModel.uiState.collectAsStateWithLifecycle()
+
                 HomeScreen(
-                    state = HomeUiState(
-                        activeCases = 12,
-                        interviews = 28,
-                        conclusions = 4,
-                        investigatingCases = listOf(
-                            HomeCaseItem(1, "Red de sobornos en obra pública", "12 mar 2025", 4, CaseStatus.INVESTIGATING),
-                            HomeCaseItem(2, "Homicidio en zona industrial", "20 feb 2025", 1, CaseStatus.INVESTIGATING)
-                        )
-                    ),
+                    state = state,
                     onNewCase = { navController.navigate(Routes.NEW_CASE) },
                     onNewInterview = { navController.navigate(Routes.NEW_INTERVIEW) },
                     onCaseClick = { caseId -> navController.navigate(Routes.caseDetail(caseId)) },
