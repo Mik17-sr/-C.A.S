@@ -7,6 +7,7 @@ val Graphite = Color(0xFF262B33)
 val Teal = Color(0xFF0E7C86)
 val TealSoft = Color(0xFFCDEEF0)
 val Copper = Color(0xFFB8562B)
+val CopperLight = Color(0xFFF2A878)
 
 // Fondos y textos: tono papel
 val Paper = Color(0xFFF7F4EE)

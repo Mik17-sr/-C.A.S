@@ -12,6 +12,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.cas.ui.home.HomeScreen
+import com.example.cas.ui.home.HomeUiState
 
 @Composable
 fun CasApp() {
@@ -42,7 +44,9 @@ fun CasApp() {
             startDestination = Routes.HOME,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Routes.HOME) { PlaceholderScreen("Inicio") }
+            composable(Routes.HOME) {
+                HomeScreen(state = HomeUiState(activeCases = 12, interviews = 28, conclusions = 4))
+            }
             composable(Routes.CASES) { PlaceholderScreen("Casos") }
             composable(Routes.SETTINGS) { PlaceholderScreen("Ajustes") }
             composable(Routes.NEW_CASE) { PlaceholderScreen("Nuevo caso") }
