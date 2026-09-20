@@ -6,14 +6,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val LightColorScheme = lightColorScheme(
-    primary = Teal,
+    primary = PressRed,
     onPrimary = Color.White,
-    primaryContainer = TealSoft,
-    onPrimaryContainer = StatusPublishedText,
-    secondary = Graphite,
+    primaryContainer = RedSoft,
+    onPrimaryContainer = RedDeep,
+    secondary = Charcoal,
     onSecondary = Color.White,
-    tertiary = Copper,
-    onTertiary = Color.White,
+    tertiary = Blush,
+    onTertiary = Charcoal,
     background = Paper,
     onBackground = InkDark,
     surface = CardSurface,

@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.example.cas.data.model.CaseStatus
 import com.example.cas.ui.components.StatusChip
 import com.example.cas.ui.theme.CASTheme
-import com.example.cas.ui.theme.CopperLight
+import com.example.cas.ui.theme.Blush
 
 @Composable
 fun HomeScreen(
@@ -137,7 +137,7 @@ private fun StatItem(
         Text(
             text = value.toString(),
             style = MaterialTheme.typography.headlineMedium,
-            color = CopperLight
+            color = Blush
         )
         Text(
             text = label,
