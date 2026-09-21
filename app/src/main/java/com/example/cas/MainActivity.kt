@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.cas.ui.auth.ForgotPasswordScreen
 import com.example.cas.ui.auth.LoginScreen
 import com.example.cas.ui.auth.RegisterScreen
 import com.example.cas.ui.theme.CASTheme
@@ -40,6 +41,9 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onNavigateToRegister = {
                                     navController.navigate("register")
+                                },
+                                onNavigateToForgotPassword = {
+                                    navController.navigate("forgot_password")
                                 }
                             )
                         }
@@ -51,6 +55,13 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 onNavigateToLogin = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+                        composable("forgot_password") {
+                            ForgotPasswordScreen(
+                                onNavigateBack = {
                                     navController.popBackStack()
                                 }
                             )

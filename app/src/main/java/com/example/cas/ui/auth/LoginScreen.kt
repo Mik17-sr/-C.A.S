@@ -18,9 +18,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit,
+    onNavigateToForgotPassword: () -> Unit,
     viewModel: AuthViewModel = viewModel(factory = AuthViewModel.Factory)
 ) {
-    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val authState by viewModel.authState.collectAsState()
 
@@ -58,9 +59,9 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     AuthTextField(
-                        value = username,
-                        onValueChange = { username = it },
-                        label = "Usuario",
+                        value = email,
+                        onValueChange = { email = it },
+                        label = "Correo Electrónico",
                         icon = Icons.Default.Person
                     )
                     
@@ -74,7 +75,13 @@ fun LoginScreen(
                         visualTransformation = PasswordVisualTransformation()
                     )
                     
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                        TextButton(onClick = onNavigateToForgotPassword) {
+                            Text("¿Olvidaste tu contraseña?", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     AnimatedVisibility(visible = authState is AuthState.Error) {
                         if (authState is AuthState.Error) {
@@ -88,7 +95,7 @@ fun LoginScreen(
                     }
 
                     Button(
-                        onClick = { viewModel.login(username, password) },
+                        onClick = { viewModel.login(email, password) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),

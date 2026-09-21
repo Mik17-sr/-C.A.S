@@ -1,52 +1,40 @@
 package com.example.cas.ui.auth
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun RegisterScreen(
-    onRegisterSuccess: () -> Unit,
-    onNavigateToLogin: () -> Unit,
+fun ForgotPasswordScreen(
+    onNavigateBack: () -> Unit,
     viewModel: AuthViewModel = viewModel(factory = AuthViewModel.Factory)
 ) {
     var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
     val authState by viewModel.authState.collectAsState()
-
-    LaunchedEffect(authState) {
-        if (authState is AuthState.Success) {
-            onRegisterSuccess()
-        }
-    }
 
     AuthBackground {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(24.dp)
-                .systemBarsPadding()
-                .verticalScroll(rememberScrollState()),
+                .systemBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             AuthHeader(
-                title = "Crea tu cuenta",
-                subtitle = "Únete a nosotros hoy mismo"
+                title = "Recuperar Acceso",
+                subtitle = "Enviaremos un enlace a tu correo"
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -62,18 +50,8 @@ fun RegisterScreen(
                     AuthTextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = "Email",
+                        label = "Correo Electrónico",
                         icon = Icons.Default.Email
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    AuthTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = "Contraseña",
-                        icon = Icons.Default.Lock,
-                        visualTransformation = PasswordVisualTransformation()
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -89,13 +67,24 @@ fun RegisterScreen(
                         }
                     }
 
+                    AnimatedVisibility(visible = authState is AuthState.ResetSent) {
+                        if (authState is AuthState.ResetSent) {
+                            Text(
+                                text = (authState as AuthState.ResetSent).message,
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                        }
+                    }
+
                     Button(
-                        onClick = { viewModel.register(email, password) },
+                        onClick = { viewModel.sendPasswordReset(email) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
                         shape = MaterialTheme.shapes.medium,
-                        enabled = authState !is AuthState.Loading
+                        enabled = authState !is AuthState.Loading && authState !is AuthState.ResetSent
                     ) {
                         if (authState is AuthState.Loading) {
                             CircularProgressIndicator(
@@ -104,7 +93,7 @@ fun RegisterScreen(
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Text("REGISTRARSE", fontWeight = FontWeight.Bold)
+                            Text("ENVIAR ENLACE", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -112,9 +101,9 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            TextButton(onClick = onNavigateToLogin) {
+            TextButton(onClick = onNavigateBack) {
                 Text(
-                    text = "¿Ya tienes cuenta? Inicia sesión",
+                    text = "Volver al inicio de sesión",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold

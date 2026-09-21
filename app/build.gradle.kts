@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services)
     id("com.google.devtools.ksp") version "2.2.10-2.0.2"
 }
 
@@ -40,6 +41,8 @@ android {
 }
 
 dependencies {
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
     implementation(platform(libs.androidx.compose.bom))
     implementation("androidx.core:core-ktx:1.12.0")
     implementation(libs.androidx.activity.compose)
