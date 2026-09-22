@@ -62,7 +62,7 @@ fun LoginScreen(
                     AuthTextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = "Correo Electrónico",
+                        label = "Correo Electrónico o usuario",
                         icon = Icons.Default.Email
                     )
                     

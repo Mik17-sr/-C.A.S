@@ -27,7 +27,7 @@ class CasApplication : Application() {
         CoroutineScope(Dispatchers.IO).launch {
             val userDao = database.userDao()
             if (userDao.countUsers() == 0) {
-                userDao.insert(
+                val ownerId = userDao.insert(
                     UserEntity(
                         name = "Tomás David Lancheros Churque",
                         photo = "",

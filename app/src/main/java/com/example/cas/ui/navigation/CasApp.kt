@@ -14,6 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.cas.ui.case.NewCaseScreen
 import com.example.cas.ui.home.HomeScreen
 import com.example.cas.ui.home.HomeViewModel
 import com.example.cas.ui.interview.SelectCaseForInterviewScreen
@@ -63,7 +64,12 @@ fun CasApp() {
             }
             composable(Routes.CASES) { PlaceholderScreen("Casos") }
             composable(Routes.SETTINGS) { PlaceholderScreen("Ajustes") }
-            composable(Routes.NEW_CASE) { PlaceholderScreen("Nuevo caso") }
+            composable(Routes.NEW_CASE) {
+                NewCaseScreen(
+                    onCaseCreated = { navController.popBackStack() },
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
             composable(
                 route = Routes.CASE_DETAIL,
                 arguments = listOf(navArgument(Routes.CASE_ID_ARG) { type = NavType.LongType })
