@@ -2,25 +2,27 @@ package com.example.cas.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.cas.CasApplication
-import com.google.firebase.auth.FirebaseAuth
+import com.example.cas.data.local.entity.UserEntity
+import com.example.cas.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 sealed class AuthState {
     object Idle : AuthState()
     object Loading : AuthState()
-    object Success : AuthState()
+    data class Success(val userId: Long) : AuthState()
     data class Error(val message: String) : AuthState()
-    data class ResetSent(val message: String) : AuthState()
+    data class ResetSuccess(val message: String) : AuthState()
 }
 
-class AuthViewModel(private val auth: FirebaseAuth = FirebaseAuth.getInstance()) : ViewModel() {
+class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
@@ -28,35 +30,74 @@ class AuthViewModel(private val auth: FirebaseAuth = FirebaseAuth.getInstance())
     fun login(email: String, password: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            try {
-                auth.signInWithEmailAndPassword(email, password).await()
-                _authState.value = AuthState.Success
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Error al iniciar sesión")
+            val trimmedEmail = email.trim()
+
+            if (trimmedEmail.isEmpty() || password.isEmpty()) {
+                _authState.value = AuthState.Error("Ingresa tu correo y tu contraseña.")
+                return@launch
+            }
+
+            val user = userRepository.login(trimmedEmail, password)
+            _authState.value = if (user != null) {
+                AuthState.Success(user.user_id)
+            } else {
+                AuthState.Error("Correo o contraseña incorrectos.")
             }
         }
     }
 
-    fun register(email: String, password: String) {
+    fun register(name: String, email: String, password: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            try {
-                auth.createUserWithEmailAndPassword(email, password).await()
-                _authState.value = AuthState.Success
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Error al registrarse")
+            val trimmedName = name.trim()
+            val trimmedEmail = email.trim()
+
+            when {
+                trimmedName.isEmpty() -> {
+                    _authState.value = AuthState.Error("Ingresa tu nombre.")
+                }
+                trimmedEmail.isEmpty() -> {
+                    _authState.value = AuthState.Error("Ingresa tu correo.")
+                }
+                password.length < 4 -> {
+                    _authState.value = AuthState.Error("La contraseña debe tener al menos 4 caracteres.")
+                }
+                userRepository.getUserByEmail(trimmedEmail) != null -> {
+                    _authState.value = AuthState.Error("Ya existe una cuenta con ese correo.")
+                }
+                else -> {
+                    val newId = userRepository.insertUser(
+                        UserEntity(
+                            name = trimmedName,
+                            photo = "",
+                            email = trimmedEmail,
+                            username = trimmedEmail,
+                            password = password
+                        )
+                    )
+                    _authState.value = AuthState.Success(newId)
+                }
             }
         }
     }
 
-    fun sendPasswordReset(email: String) {
+    fun resetPassword(email: String, newPassword: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            try {
-                auth.sendPasswordResetEmail(email).await()
-                _authState.value = AuthState.ResetSent("Se ha enviado un enlace a tu correo")
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Error al enviar el correo")
+            val trimmedEmail = email.trim()
+            val user = userRepository.getUserByEmail(trimmedEmail)
+
+            when {
+                user == null -> {
+                    _authState.value = AuthState.Error("No encontramos una cuenta con ese correo.")
+                }
+                newPassword.length < 4 -> {
+                    _authState.value = AuthState.Error("La nueva contraseña debe tener al menos 4 caracteres.")
+                }
+                else -> {
+                    userRepository.updateUser(user.copy(password = newPassword))
+                    _authState.value = AuthState.ResetSuccess("Contraseña actualizada. Ya puedes iniciar sesión.")
+                }
             }
         }
     }
@@ -66,13 +107,10 @@ class AuthViewModel(private val auth: FirebaseAuth = FirebaseAuth.getInstance())
     }
 
     companion object {
-        val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(
-                modelClass: Class<T>,
-                extras: CreationExtras
-            ): T {
-                return AuthViewModel() as T
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val app = this[APPLICATION_KEY] as CasApplication
+                AuthViewModel(app.userRepository)
             }
         }
     }

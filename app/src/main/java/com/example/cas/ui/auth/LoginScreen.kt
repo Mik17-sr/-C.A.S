@@ -3,6 +3,7 @@ package com.example.cas.ui.auth
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -62,7 +63,7 @@ fun LoginScreen(
                         value = email,
                         onValueChange = { email = it },
                         label = "Correo Electrónico",
-                        icon = Icons.Default.Person
+                        icon = Icons.Default.Email
                     )
                     
                     Spacer(modifier = Modifier.height(16.dp))
