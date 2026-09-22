@@ -3,6 +3,7 @@ package com.example.cas.data.local.dao
 import androidx.room.Dao
 import androidx.room.Query
 import com.example.cas.data.local.entity.CaseEntity
+import com.example.cas.data.model.CaseStatus
 import com.example.cas.data.model.CaseWithInterviewCount
 import kotlinx.coroutines.flow.Flow
 
