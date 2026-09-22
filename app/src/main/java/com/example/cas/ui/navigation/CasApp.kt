@@ -14,13 +14,19 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.cas.ui.case.CaseDetailScreen
+import com.example.cas.ui.case.CasesScreen
 import com.example.cas.ui.case.NewCaseScreen
 import com.example.cas.ui.home.HomeScreen
 import com.example.cas.ui.home.HomeViewModel
+import com.example.cas.ui.interview.NewInterviewScreen
 import com.example.cas.ui.interview.SelectCaseForInterviewScreen
+import com.example.cas.ui.settings.SettingsScreen
 
 @Composable
-fun CasApp() {
+fun CasApp(
+    onLogout: () -> Unit = {}
+) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -62,8 +68,14 @@ fun CasApp() {
                     onSeeAllCases = { navigateToTab(Routes.CASES) }
                 )
             }
-            composable(Routes.CASES) { PlaceholderScreen("Casos") }
-            composable(Routes.SETTINGS) { PlaceholderScreen("Ajustes") }
+            composable(Routes.CASES) {
+                CasesScreen(
+                    onCaseClick = { caseId -> navController.navigate(Routes.caseDetail(caseId)) }
+                )
+            }
+            composable(Routes.SETTINGS) {
+                SettingsScreen(onLogout = onLogout)
+            }
             composable(Routes.NEW_CASE) {
                 NewCaseScreen(
                     onCaseCreated = { navController.popBackStack() },
@@ -73,8 +85,13 @@ fun CasApp() {
             composable(
                 route = Routes.CASE_DETAIL,
                 arguments = listOf(navArgument(Routes.CASE_ID_ARG) { type = NavType.LongType })
-            ) {
-                PlaceholderScreen("Detalle del caso")
+            ) { backStackEntry ->
+                val caseId = backStackEntry.arguments?.getLong(Routes.CASE_ID_ARG) ?: -1L
+                CaseDetailScreen(
+                    caseId = caseId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onAddInterview = { id -> navController.navigate(Routes.newInterview(id)) }
+                )
             }
             composable(Routes.SELECT_CASE_FOR_INTERVIEW) {
                 SelectCaseForInterviewScreen(
@@ -91,7 +108,11 @@ fun CasApp() {
                 arguments = listOf(navArgument(Routes.CASE_ID_ARG) { type = NavType.LongType })
             ) { backStackEntry ->
                 val caseId = backStackEntry.arguments?.getLong(Routes.CASE_ID_ARG) ?: -1L
-                PlaceholderScreen("Nueva entrevista (caso $caseId)")
+                NewInterviewScreen(
+                    caseId = caseId,
+                    onInterviewCreated = { navController.popBackStack() },
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
         }
     }

@@ -9,6 +9,10 @@ class InterviewRepository(
 ) {
     val totalInterviews: Flow<Int> = interviewDao.countInterviews()
 
+    fun countInterviewsForUser(userId: Long): Flow<Int> {
+        return interviewDao.countInterviewsForUser(userId)
+    }
+
     fun getInterviewsByCase(caseId: Long): Flow<List<InterviewEntity>> {
         return interviewDao.getInterviewsByCase(caseId)
     }

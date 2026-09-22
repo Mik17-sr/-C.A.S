@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface EvidenceDAO : InterfaceDAO<EvidenceEntity> {
 
-    @Query("SELECT * FROM evidences WHERE case_id = :caseId")
+    @Query("SELECT * FROM evidences WHERE case_id = :caseId ORDER BY date DESC")
     fun getEvidencesByCase(caseId: Long) : Flow<List<EvidenceEntity>>
+
+    @Query("SELECT COUNT(*) FROM evidences")
+    suspend fun countEvidences(): Int
 }

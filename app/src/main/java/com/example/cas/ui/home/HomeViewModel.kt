@@ -10,6 +10,7 @@ import com.example.cas.CasApplication
 import com.example.cas.data.model.CaseStatus
 import com.example.cas.data.repository.CaseRepository
 import com.example.cas.data.repository.InterviewRepository
+import com.example.cas.data.session.SessionManager
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -20,11 +21,13 @@ class HomeViewModel(
     interviewRepository: InterviewRepository
 ) : ViewModel() {
 
+    private val currentUserId = SessionManager.currentUserId ?: 1L
+
     val uiState: StateFlow<HomeUiState> = combine(
-        caseRepository.activeCasesCount,
-        interviewRepository.totalInterviews,
-        caseRepository.conclusionsCount,
-        caseRepository.getCasesWithInterviewCount(CaseStatus.INVESTIGATING, RECENT_LIMIT)
+        caseRepository.activeCasesCountForUser(currentUserId),
+        interviewRepository.countInterviewsForUser(currentUserId),
+        caseRepository.conclusionsCountForUser(currentUserId),
+        caseRepository.getCasesWithInterviewCountForUser(currentUserId, CaseStatus.INVESTIGATING, RECENT_LIMIT)
     ) { activeCases, interviews, conclusions, investigating ->
         HomeUiState(
             activeCases = activeCases,

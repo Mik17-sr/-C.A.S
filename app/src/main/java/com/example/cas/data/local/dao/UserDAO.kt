@@ -20,6 +20,9 @@ interface UserDAO : InterfaceDAO<UserEntity> {
     @Query("SELECT COUNT(*) FROM users")
     suspend fun countUsers(): Int
 
+    @Query("SELECT * FROM users ORDER BY user_id ASC")
+    suspend fun getAllUsersList(): List<UserEntity>
+
     @Query("SELECT * FROM users WHERE email = :email")
     suspend fun getUserByEmail(email: String): UserEntity?
 }

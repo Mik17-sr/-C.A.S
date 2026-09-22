@@ -61,7 +61,13 @@ private fun RootNavHost() {
             ForgotPasswordScreen(onNavigateBack = { navController.popBackStack() })
         }
         composable("app") {
-            CasApp()
+            CasApp(
+                onLogout = {
+                    navController.navigate("login") {
+                        popUpTo("app") { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }

@@ -13,4 +13,7 @@ interface InterviewDAO : InterfaceDAO<InterviewEntity> {
 
     @Query("SELECT COUNT(*) FROM interviews")
     fun countInterviews(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM interviews i INNER JOIN cases c ON i.case_id = c.case_id WHERE c.user_id = :userId")
+    fun countInterviewsForUser(userId: Long): Flow<Int>
 }
