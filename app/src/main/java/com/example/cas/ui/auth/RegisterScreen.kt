@@ -22,6 +22,7 @@ fun RegisterScreen(
     viewModel: AuthViewModel = viewModel(factory = AuthViewModel.Factory)
 ) {
     var name by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val authState by viewModel.authState.collectAsState()
@@ -70,6 +71,15 @@ fun RegisterScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     AuthTextField(
+                        value = username,
+                        onValueChange = { username = it },
+                        label = "Nombre de usuario",
+                        icon = Icons.Default.AccountCircle
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    AuthTextField(
                         value = email,
                         onValueChange = { email = it },
                         label = "Email",
@@ -100,7 +110,7 @@ fun RegisterScreen(
                     }
 
                     Button(
-                        onClick = { viewModel.register(name, email, password) },
+                        onClick = { viewModel.register(name, username, email, password) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),

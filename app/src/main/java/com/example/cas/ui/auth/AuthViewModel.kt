@@ -48,21 +48,25 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
         }
     }
 
-    fun register(name: String, email: String, password: String) {
+    fun register(name: String, username: String, email: String, password: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             val trimmedName = name.trim()
+            val trimmedUsername = username.trim()
             val trimmedEmail = email.trim()
 
             when {
                 trimmedName.isEmpty() -> {
                     _authState.value = AuthState.Error("Ingresa tu nombre.")
                 }
+                trimmedUsername.isEmpty() -> {
+                    _authState.value = AuthState.Error("Ingresa tu nombre de usuario.")
+                }
                 trimmedEmail.isEmpty() -> {
                     _authState.value = AuthState.Error("Ingresa tu correo.")
                 }
                 password.length < 4 -> {
-                    _authState.value = AuthState.Error("La contraseña debe tener al menos 4 caracteres.")
+                    _authState.value = AuthState.Error("La contraseña debe tener al menos 6 caracteres.")
                 }
                 userRepository.getUserByEmail(trimmedEmail) != null -> {
                     _authState.value = AuthState.Error("Ya existe una cuenta con ese correo.")
@@ -73,7 +77,7 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
                             name = trimmedName,
                             photo = "",
                             email = trimmedEmail,
-                            username = trimmedEmail,
+                            username = trimmedUsername,
                             password = password
                         )
                     )

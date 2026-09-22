@@ -173,6 +173,7 @@ private fun QuickActions(
             onClick = onNewInterview,
             modifier = Modifier.weight(1f)
         )
+
     }
 }
 
