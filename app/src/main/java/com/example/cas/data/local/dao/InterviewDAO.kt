@@ -10,4 +10,7 @@ interface InterviewDAO : InterfaceDAO<InterviewEntity> {
 
     @Query("SELECT * FROM interviews WHERE case_id = :caseId")
     fun getInterviewsByCase(caseId: Long) : Flow<List<InterviewEntity>>
+
+    @Query("SELECT COUNT(*) FROM interviews")
+    fun countInterviews(): Flow<Int>
 }

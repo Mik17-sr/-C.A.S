@@ -18,7 +18,7 @@ import androidx.room.PrimaryKey
     ]
 )
 data class EvidenceEntity (
-    @PrimaryKey
+    @PrimaryKey(autoGenerate = true)
     val evidence_id: Long = 0L,
     val case_id: Long,
     val photo: String,

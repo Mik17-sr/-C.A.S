@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 class InterviewRepository(
     private val interviewDao: InterviewDAO
 ) {
+    val totalInterviews: Flow<Int> = interviewDao.countInterviews()
 
     fun getInterviewsByCase(caseId: Long): Flow<List<InterviewEntity>> {
         return interviewDao.getInterviewsByCase(caseId)
