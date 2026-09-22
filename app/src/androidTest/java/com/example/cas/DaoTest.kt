@@ -8,6 +8,7 @@ import com.example.cas.data.local.AppDatabase
 import com.example.cas.data.local.dao.CaseDAO
 import com.example.cas.data.local.entity.CaseEntity
 import com.example.cas.data.local.entity.UserEntity
+import com.example.cas.data.model.CaseStatus
 import com.example.cas.data.repository.CaseRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -64,7 +65,7 @@ class DaoTest {
             photo = "evidence.jpg",
             description = "Investigación en el callejón",
             date = "2026-09-19",
-            status = "Abierto",
+            status = CaseStatus.INVESTIGATING,
             conclusion = null
         )
 

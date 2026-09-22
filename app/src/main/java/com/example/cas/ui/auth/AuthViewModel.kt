@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.cas.CasApplication
 import com.example.cas.data.local.entity.UserEntity
 import com.example.cas.data.repository.UserRepository
+import com.example.cas.data.session.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,6 +40,7 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
 
             val user = userRepository.login(trimmedEmail, password)
             _authState.value = if (user != null) {
+                SessionManager.login(user.user_id)
                 AuthState.Success(user.user_id)
             } else {
                 AuthState.Error("Correo o contraseña incorrectos.")
@@ -75,6 +77,7 @@ class AuthViewModel(private val userRepository: UserRepository) : ViewModel() {
                             password = password
                         )
                     )
+                    SessionManager.login(newId)
                     _authState.value = AuthState.Success(newId)
                 }
             }
