@@ -4,11 +4,13 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
@@ -18,6 +20,9 @@ fun ForgotPasswordScreen(
     viewModel: AuthViewModel = viewModel(factory = AuthViewModel.Factory)
 ) {
     var email by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var mismatchError by remember { mutableStateOf<String?>(null) }
     val authState by viewModel.authState.collectAsState()
 
     AuthBackground {
@@ -30,11 +35,11 @@ fun ForgotPasswordScreen(
             verticalArrangement = Arrangement.Center
         ) {
             AuthHeader(
-                title = "Recuperar Acceso",
-                subtitle = "Enviaremos un enlace a tu correo"
+                title = "Recuperar acceso",
+                subtitle = "Verifica tu correo y crea una nueva contraseña"
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -50,11 +55,40 @@ fun ForgotPasswordScreen(
                     AuthTextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = "Correo Electrónico",
+                        label = "Correo electrónico",
                         icon = Icons.Default.Email
                     )
 
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    AuthTextField(
+                        value = newPassword,
+                        onValueChange = { newPassword = it },
+                        label = "Nueva contraseña",
+                        icon = Icons.Default.Lock,
+                        visualTransformation = PasswordVisualTransformation()
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    AuthTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        label = "Confirmar contraseña",
+                        icon = Icons.Default.Lock,
+                        visualTransformation = PasswordVisualTransformation()
+                    )
+
                     Spacer(modifier = Modifier.height(24.dp))
+
+                    AnimatedVisibility(visible = mismatchError != null) {
+                        Text(
+                            text = mismatchError ?: "",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                    }
 
                     AnimatedVisibility(visible = authState is AuthState.Error) {
                         if (authState is AuthState.Error) {
@@ -67,10 +101,10 @@ fun ForgotPasswordScreen(
                         }
                     }
 
-                    AnimatedVisibility(visible = authState is AuthState.ResetSent) {
-                        if (authState is AuthState.ResetSent) {
+                    AnimatedVisibility(visible = authState is AuthState.ResetSuccess) {
+                        if (authState is AuthState.ResetSuccess) {
                             Text(
-                                text = (authState as AuthState.ResetSent).message,
+                                text = (authState as AuthState.ResetSuccess).message,
                                 color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.padding(bottom = 16.dp)
@@ -79,12 +113,19 @@ fun ForgotPasswordScreen(
                     }
 
                     Button(
-                        onClick = { viewModel.sendPasswordReset(email) },
+                        onClick = {
+                            if (newPassword != confirmPassword) {
+                                mismatchError = "Las contraseñas no coinciden."
+                            } else {
+                                mismatchError = null
+                                viewModel.resetPassword(email, newPassword)
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
                         shape = MaterialTheme.shapes.medium,
-                        enabled = authState !is AuthState.Loading && authState !is AuthState.ResetSent
+                        enabled = authState !is AuthState.Loading && authState !is AuthState.ResetSuccess
                     ) {
                         if (authState is AuthState.Loading) {
                             CircularProgressIndicator(
@@ -93,7 +134,7 @@ fun ForgotPasswordScreen(
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Text("ENVIAR ENLACE", fontWeight = FontWeight.Bold)
+                            Text("ACTUALIZAR CONTRASEÑA", fontWeight = FontWeight.Bold)
                         }
                     }
                 }

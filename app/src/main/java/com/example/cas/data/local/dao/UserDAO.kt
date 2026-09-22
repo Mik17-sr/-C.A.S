@@ -16,4 +16,10 @@ interface UserDAO : InterfaceDAO<UserEntity> {
 
     @Query("SELECT * FROM users WHERE username = :username AND password = :password")
     suspend fun getUserByUsername(username: String, password : String): UserEntity?
+
+    @Query("SELECT COUNT(*) FROM users")
+    suspend fun countUsers(): Int
+
+    @Query("SELECT * FROM users WHERE email = :email")
+    suspend fun getUserByEmail(email: String): UserEntity?
 }
