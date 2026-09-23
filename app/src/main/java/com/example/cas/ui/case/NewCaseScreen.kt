@@ -169,8 +169,6 @@ private fun DatePickerField(
             trailingIcon = { Icon(Icons.Filled.CalendarToday, contentDescription = null) },
             modifier = Modifier.fillMaxWidth()
         )
-        // Capa invisible encima del campo: como el campo es de solo lectura,
-        // esta es la que realmente detecta el toque y abre el selector.
         Box(
             modifier = Modifier
                 .matchParentSize()
