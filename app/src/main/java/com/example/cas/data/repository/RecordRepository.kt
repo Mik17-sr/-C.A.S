@@ -2,14 +2,12 @@ package com.example.cas.data.repository
 
 import com.example.cas.data.local.dao.RecordDAO
 import com.example.cas.data.local.entity.RecordEntity
-import com.example.cas.data.local.entity.UserEntity
 import kotlinx.coroutines.flow.Flow
 
 class RecordRepository(
-    val recordDao: RecordDAO
+    private val recordDao: RecordDAO
 ) {
-
-    fun getRecordsByInterview(interviewId: Long) : Flow<List<RecordEntity>> {
+    fun getRecordsByInterview(interviewId: Long): Flow<List<RecordEntity>> {
         return recordDao.getRecordsByInterview(interviewId)
     }
 
@@ -17,7 +15,7 @@ class RecordRepository(
         return recordDao.insert(record)
     }
 
-    suspend fun deleteRecord(record: RecordEntity) {
-        recordDao.delete(record)
+    fun getRecordsByCase(caseId: Long): Flow<List<RecordEntity>> {
+        return recordDao.getRecordsByCase(caseId)
     }
 }

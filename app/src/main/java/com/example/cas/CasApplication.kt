@@ -9,6 +9,7 @@ import com.example.cas.data.local.entity.EvidenceEntity
 import com.example.cas.data.repository.CaseRepository
 import com.example.cas.data.repository.EvidenceRepository
 import com.example.cas.data.repository.InterviewRepository
+import com.example.cas.data.repository.RecordRepository
 import com.example.cas.data.repository.UserRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +23,7 @@ class CasApplication : Application() {
     val interviewRepository by lazy { InterviewRepository(database.interviewDao()) }
     val userRepository by lazy { UserRepository(database.userDao()) }
     val evidenceRepository by lazy { EvidenceRepository(database.evidenceDao()) }
+    val recordRepository by lazy { RecordRepository(database.recordDao()) }
 
     override fun onCreate() {
         super.onCreate()
@@ -58,7 +60,7 @@ class CasApplication : Application() {
                     )
                 )
             }
-
+            /*
             if (caseDao.countCases() == 0) {
                 val users = userDao.getAllUsersList()
                 if (users.isNotEmpty()) {
@@ -111,7 +113,7 @@ class CasApplication : Application() {
                         )
                     )
                 }
-            }
+            }*/
         }
     }
 }

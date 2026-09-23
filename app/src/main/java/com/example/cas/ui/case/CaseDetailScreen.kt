@@ -1,7 +1,15 @@
 package com.example.cas.ui.case
 
+import android.content.Context
+import android.graphics.BitmapFactory
+import android.media.MediaPlayer
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +29,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Cancel
@@ -29,7 +38,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
@@ -54,23 +65,36 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cas.data.local.entity.CaseEntity
 import com.example.cas.data.local.entity.EvidenceEntity
 import com.example.cas.data.local.entity.InterviewEntity
+import com.example.cas.data.local.entity.RecordEntity
 import com.example.cas.data.model.CaseStatus
 import com.example.cas.ui.components.StatusChip
 import com.example.cas.ui.home.formatCaseDate
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -152,6 +176,7 @@ fun CaseDetailScreen(
                     val caseData = state.case
                     val interviews = state.interviews
                     val evidences = state.evidences
+                    val records = state.records
 
                     if (isEditing) {
                         EditCaseForm(
@@ -169,6 +194,7 @@ fun CaseDetailScreen(
                             case = caseData,
                             interviews = interviews,
                             evidences = evidences,
+                            records = records,
                             saveStatus = saveStatus,
                             onAddInterview = { onAddInterview(caseData.case_id) },
                             onAddEvidenceClick = { showAddEvidenceDialog = true },
@@ -209,8 +235,8 @@ fun CaseDetailScreen(
     if (showAddEvidenceDialog) {
         AddEvidenceDialog(
             onDismiss = { showAddEvidenceDialog = false },
-            onConfirm = { photo, description, date ->
-                viewModel.addEvidence(photo, description, date)
+            onConfirm = { photoPath, description, date ->
+                viewModel.addEvidence(photoPath, description, date)
                 showAddEvidenceDialog = false
             }
         )
@@ -222,6 +248,7 @@ private fun ViewCaseDetails(
     case: CaseEntity,
     interviews: List<InterviewEntity>,
     evidences: List<EvidenceEntity>,
+    records: List<RecordEntity>,
     saveStatus: String?,
     onAddInterview: () -> Unit,
     onAddEvidenceClick: () -> Unit,
@@ -330,7 +357,6 @@ private fun ViewCaseDetails(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Sección de Evidencias
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -369,7 +395,6 @@ private fun ViewCaseDetails(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Sección de Entrevistas
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -399,7 +424,10 @@ private fun ViewCaseDetails(
             )
         } else {
             interviews.forEach { interview ->
-                InterviewItemCard(interview = interview)
+                InterviewItemCard(
+                    interview = interview,
+                    records = records.filter { it.interview_id == interview.interview_id }
+                )
             }
         }
     }
@@ -411,6 +439,14 @@ private fun EvidenceItemCard(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var thumbnail by remember(evidence.photo) { mutableStateOf<ImageBitmap?>(null) }
+
+    LaunchedEffect(evidence.photo) {
+        thumbnail = withContext(Dispatchers.IO) {
+            runCatching { BitmapFactory.decodeFile(evidence.photo)?.asImageBitmap() }.getOrNull()
+        }
+    }
+
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -424,17 +460,25 @@ private fun EvidenceItemCard(
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .background(
-                        MaterialTheme.colorScheme.primaryContainer,
-                        RoundedCornerShape(8.dp)
-                    ),
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Image,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                val bitmap = thumbnail
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Image,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -469,6 +513,7 @@ private fun EvidenceItemCard(
 @Composable
 private fun InterviewItemCard(
     interview: InterviewEntity,
+    records: List<RecordEntity>,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -521,7 +566,70 @@ private fun InterviewItemCard(
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
+
+            records.forEach { record ->
+                Spacer(modifier = Modifier.height(8.dp))
+                AudioPlayButton(path = record.audio_path)
+            }
         }
+    }
+}
+
+@Composable
+private fun AudioPlayButton(
+    path: String?,
+    modifier: Modifier = Modifier
+) {
+    if (path.isNullOrEmpty()) return
+
+    var isPlaying by remember(path) { mutableStateOf(false) }
+    var mediaPlayer by remember(path) { mutableStateOf<MediaPlayer?>(null) }
+
+    DisposableEffect(path) {
+        onDispose {
+            mediaPlayer?.runCatching { stop(); release() }
+        }
+    }
+
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .clickable {
+                val current = mediaPlayer
+                if (isPlaying && current != null) {
+                    current.runCatching { stop(); release() }
+                    mediaPlayer = null
+                    isPlaying = false
+                } else {
+                    val player = MediaPlayer()
+                    val started = runCatching {
+                        player.setDataSource(path)
+                        player.setOnCompletionListener { isPlaying = false }
+                        player.prepare()
+                        player.start()
+                    }.isSuccess
+                    if (started) {
+                        mediaPlayer = player
+                        isPlaying = true
+                    }
+                }
+            }
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+            contentDescription = if (isPlaying) "Pausar" else "Reproducir grabación",
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = "Escuchar grabación",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     }
 }
 
@@ -591,7 +699,6 @@ private fun EditCaseForm(
                 .height(100.dp)
         )
 
-        // Gestión de Evidencias en Editar
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -607,7 +714,7 @@ private fun EditCaseForm(
             OutlinedButton(onClick = onAddEvidenceClick) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Subir foto/evidencia")
+                Text("Subir foto")
             }
         }
 
@@ -647,29 +754,95 @@ private fun EditCaseForm(
     }
 }
 
+private fun copyUriToAppStorage(context: Context, uri: Uri): String? {
+    return try {
+        val dir = File(context.filesDir, "evidence_photos").apply { mkdirs() }
+        val outFile = File(dir, "evidence_${System.currentTimeMillis()}.jpg")
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            FileOutputStream(outFile).use { output -> input.copyTo(output) }
+        }
+        outFile.absolutePath
+    } catch (e: Exception) {
+        null
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddEvidenceDialog(
     onDismiss: () -> Unit,
-    onConfirm: (photo: String, description: String, date: String) -> Unit
+    onConfirm: (photoPath: String, description: String, date: String) -> Unit
 ) {
-    var photoUrl by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var photoPath by remember { mutableStateOf<String?>(null) }
+    var thumbnail by remember { mutableStateOf<ImageBitmap?>(null) }
+    var isCopying by remember { mutableStateOf(false) }
     var description by remember { mutableStateOf("") }
     var date by remember { mutableStateOf("2026-09-22") }
 
+    val pickPhotoLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            isCopying = true
+            scope.launch {
+                val result = withContext(Dispatchers.IO) {
+                    val path = copyUriToAppStorage(context, uri)
+                    val bitmap = path?.let {
+                        runCatching { BitmapFactory.decodeFile(it)?.asImageBitmap() }.getOrNull()
+                    }
+                    path to bitmap
+                }
+                photoPath = result.first
+                thumbnail = result.second
+                isCopying = false
+            }
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Adjuntar Evidencia") },
+        title = { Text("Adjuntar evidencia") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = photoUrl,
-                    onValueChange = { photoUrl = it },
-                    label = { Text("URL o Ruta de Foto/Documento") },
-                    placeholder = { Text("Ej. foto_escena.jpg") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Surface(
+                    onClick = {
+                        pickPhotoLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val bitmap = thumbnail
+                        when {
+                            isCopying -> CircularProgressIndicator()
+                            bitmap != null -> Image(
+                                bitmap = bitmap,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            else -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.AddPhotoAlternate, contentDescription = null)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Toca para elegir una foto",
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
+                    }
+                }
 
                 OutlinedTextField(
                     value = description,
@@ -687,9 +860,8 @@ private fun AddEvidenceDialog(
         },
         confirmButton = {
             Button(
-                onClick = {
-                    onConfirm(photoUrl, description, date)
-                }
+                onClick = { photoPath?.let { onConfirm(it, description, date) } },
+                enabled = photoPath != null && !isCopying
             ) {
                 Text("ADJUNTAR")
             }

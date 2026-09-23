@@ -10,21 +10,25 @@ import com.example.cas.CasApplication
 import com.example.cas.data.local.entity.CaseEntity
 import com.example.cas.data.local.entity.EvidenceEntity
 import com.example.cas.data.local.entity.InterviewEntity
+import com.example.cas.data.local.entity.RecordEntity
 import com.example.cas.data.repository.CaseRepository
 import com.example.cas.data.repository.EvidenceRepository
 import com.example.cas.data.repository.InterviewRepository
+import com.example.cas.data.repository.RecordRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import java.io.File
 
 sealed class DetailUiState {
     object Loading : DetailUiState()
     data class Success(
         val case: CaseEntity,
         val interviews: List<InterviewEntity>,
-        val evidences: List<EvidenceEntity>
+        val evidences: List<EvidenceEntity>,
+        val records: List<RecordEntity>
     ) : DetailUiState()
     object Deleted : DetailUiState()
     data class Error(val message: String) : DetailUiState()
@@ -34,7 +38,8 @@ class CaseDetailViewModel(
     private val caseId: Long,
     private val caseRepository: CaseRepository,
     private val interviewRepository: InterviewRepository,
-    private val evidenceRepository: EvidenceRepository
+    private val evidenceRepository: EvidenceRepository,
+    private val recordRepository: RecordRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
@@ -60,12 +65,14 @@ class CaseDetailViewModel(
 
             combine(
                 interviewRepository.getInterviewsByCase(caseId),
-                evidenceRepository.getEvidencesByCase(caseId)
-            ) { interviews, evidences ->
+                evidenceRepository.getEvidencesByCase(caseId),
+                recordRepository.getRecordsByCase(caseId)
+            ) { interviews, evidences, records ->
                 DetailUiState.Success(
                     case = caseEntity,
                     interviews = interviews,
-                    evidences = evidences
+                    evidences = evidences,
+                    records = records
                 )
             }.collect { state ->
                 _uiState.value = state
@@ -103,13 +110,13 @@ class CaseDetailViewModel(
         }
     }
 
-    fun addEvidence(photo: String, description: String, date: String) {
+    fun addEvidence(photoPath: String, description: String, date: String) {
         viewModelScope.launch {
-            if (photo.trim().isEmpty() && description.trim().isEmpty()) return@launch
+            if (photoPath.isBlank()) return@launch
             evidenceRepository.insertEvidence(
                 EvidenceEntity(
                     case_id = caseId,
-                    photo = photo.trim(),
+                    photo = photoPath,
                     date = date,
                     description = description.trim()
                 )
@@ -121,6 +128,7 @@ class CaseDetailViewModel(
     fun deleteEvidence(evidence: EvidenceEntity) {
         viewModelScope.launch {
             evidenceRepository.deleteEvidence(evidence)
+            runCatching { File(evidence.photo).delete() }
         }
     }
 
@@ -146,7 +154,8 @@ class CaseDetailViewModel(
                     caseId,
                     app.caseRepository,
                     app.interviewRepository,
-                    app.evidenceRepository
+                    app.evidenceRepository,
+                    app.recordRepository
                 )
             }
         }

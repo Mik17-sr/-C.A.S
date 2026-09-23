@@ -8,7 +8,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.cas.CasApplication
 import com.example.cas.data.local.entity.InterviewEntity
+import com.example.cas.data.local.entity.RecordEntity
 import com.example.cas.data.repository.InterviewRepository
+import com.example.cas.data.repository.RecordRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +24,8 @@ sealed class SaveInterviewState {
 }
 
 class NewInterviewViewModel(
-    private val interviewRepository: InterviewRepository
+    private val interviewRepository: InterviewRepository,
+    private val recordRepository: RecordRepository
 ) : ViewModel() {
 
     private val _saveState = MutableStateFlow<SaveInterviewState>(SaveInterviewState.Idle)
@@ -33,7 +36,9 @@ class NewInterviewViewModel(
         person: String,
         findings: String,
         description: String,
-        date: String
+        date: String,
+        audioPath: String?,
+        audioDurationSeconds: Int
     ) {
         viewModelScope.launch {
             _saveState.value = SaveInterviewState.Saving
@@ -59,7 +64,7 @@ class NewInterviewViewModel(
                     _saveState.value = SaveInterviewState.Error("Selecciona una fecha.")
                 }
                 else -> {
-                    interviewRepository.insertInterview(
+                    val interviewId = interviewRepository.insertInterview(
                         InterviewEntity(
                             case_id = caseId,
                             person = trimmedPerson,
@@ -68,6 +73,18 @@ class NewInterviewViewModel(
                             date = date
                         )
                     )
+
+                    if (!audioPath.isNullOrEmpty()) {
+                        recordRepository.insertRecord(
+                            RecordEntity(
+                                interview_id = interviewId,
+                                content = "Grabación de audio (${audioDurationSeconds}s)",
+                                audio_path = audioPath,
+                                date = date
+                            )
+                        )
+                    }
+
                     _saveState.value = SaveInterviewState.Success
                 }
             }
@@ -78,7 +95,7 @@ class NewInterviewViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as CasApplication
-                NewInterviewViewModel(app.interviewRepository)
+                NewInterviewViewModel(app.interviewRepository, app.recordRepository)
             }
         }
     }
