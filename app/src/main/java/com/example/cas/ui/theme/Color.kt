@@ -2,10 +2,26 @@ package com.example.cas.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Marca: tinta y rojo
+val Charcoal = Color(0xFF262626)
+val PressRed = Color(0xFFC2331F)
+val RedSoft = Color(0xFFFBE1DB)
+val RedDeep = Color(0xFF8C2414)
+val Blush = Color(0xFFF2B8A8)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Fondos y textos
+val Paper = Color(0xFFF6F5F3)
+val CardSurface = Color(0xFFFFFFFF)
+val Border = Color(0xFFE4E2DE)
+val InkDark = Color(0xFF1E1E1E)
+val InkMuted = Color(0xFF6A6864)
+
+// Chips de estado (fondo y texto)
+val StatusInvestigatingBg = Color(0xFFFBE1DB)
+val StatusInvestigatingText = Color(0xFF8C2414)
+val StatusEditingBg = Color(0xFFEBE4F7)
+val StatusEditingText = Color(0xFF5B3FA0)
+val StatusPublishedBg = Color(0xFFE0F0E3)
+val StatusPublishedText = Color(0xFF1F6B3B)
+val StatusClosedBg = Color(0xFFE7E5E0)
+val StatusClosedText = Color(0xFF4A4844)
