@@ -2,9 +2,9 @@ package com.example.cas.ui.home
 
 import com.example.cas.data.local.entity.CaseEntity
 import com.example.cas.data.model.CaseStatus
-import com.example.cas.data.model.CaseWithInterviewCount
 import com.example.cas.data.repository.CaseRepository
 import com.example.cas.data.repository.InterviewRepository
+import com.example.cas.data.session.SessionManager
 import com.example.cas.fakes.FakeCaseDao
 import com.example.cas.fakes.FakeInterviewDao
 import kotlinx.coroutines.Dispatchers
@@ -32,10 +32,12 @@ class HomeViewModelTest {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         caseDao = FakeCaseDao()
         interviewDao = FakeInterviewDao()
+        SessionManager.logout() // sin sesión -> HomeViewModel cae al usuario 1L por defecto
     }
 
     @After
     fun tearDown() {
+        SessionManager.logout()
         Dispatchers.resetMain()
     }
 
@@ -44,97 +46,117 @@ class HomeViewModelTest {
         interviewRepository = InterviewRepository(interviewDao)
     )
 
-    // El estado solo se calcula mientras alguien lo observa, igual que la pantalla real.
     private fun TestScope.keepStateHot(viewModel: HomeViewModel) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect { }
         }
     }
 
-    private fun caseRow(id: Long, title: String, date: String, interviews: Int) =
-        CaseWithInterviewCount(
-            case = CaseEntity(
-                case_id = id,
-                user_id = 1L,
-                title = title,
-                photo = "",
-                description = "",
-                date = date,
-                status = CaseStatus.INVESTIGATING
-            ),
-            interviewCount = interviews
-        )
+    private fun case(
+        id: Long,
+        userId: Long,
+        title: String,
+        date: String,
+        status: String,
+        conclusion: String? = null
+    ) = CaseEntity(
+        case_id = id,
+        user_id = userId,
+        title = title,
+        photo = "",
+        description = "",
+        date = date,
+        status = status,
+        conclusion = conclusion
+    )
 
     @Test
     fun `combina conteos y lista de casos en un solo estado`() = runTest {
-        caseDao.activeCount.value = 3
-        interviewDao.interviewCount.value = 5
-        caseDao.conclusionsCount.value = 2
-        caseDao.investigating.value = listOf(
-            caseRow(1L, "Red de sobornos", "2025-03-12", 4),
-            caseRow(2L, "Homicidio industrial", "2025-02-20", 1)
-        )
+        SessionManager.login(1L)
+
+        caseDao.insert(case(1L, 1L, "Red de sobornos", "2025-03-12", CaseStatus.INVESTIGATING))
+        caseDao.insert(case(2L, 1L, "Homicidio industrial", "2025-02-20", CaseStatus.INVESTIGATING))
+        caseDao.insert(case(3L, 1L, "Caso cerrado", "2025-01-01", CaseStatus.CLOSED, conclusion = "Resuelto"))
+        interviewDao.interviewCountForUser.value = 5
 
         val viewModel = createViewModel()
         keepStateHot(viewModel)
         advanceUntilIdle()
 
+        val state = viewModel.uiState.value
+        assertEquals(2, state.activeCases) // el cerrado no cuenta
+        assertEquals(5, state.interviews)
+        assertEquals(1, state.conclusions)
         assertEquals(
-            HomeUiState(
-                activeCases = 3,
-                interviews = 5,
-                conclusions = 2,
-                investigatingCases = listOf(
-                    HomeCaseItem(1L, "Red de sobornos", "12 mar 2025", 4, CaseStatus.INVESTIGATING),
-                    HomeCaseItem(2L, "Homicidio industrial", "20 feb 2025", 1, CaseStatus.INVESTIGATING)
-                )
-            ),
-            viewModel.uiState.value
+            listOf("Red de sobornos", "Homicidio industrial"),
+            state.investigatingCases.map { it.title }
         )
     }
 
     @Test
     fun `sin casos en investigacion la lista queda vacia`() = runTest {
-        caseDao.activeCount.value = 1
+        SessionManager.login(1L)
+        caseDao.insert(case(1L, 1L, "Caso en edición", "2025-01-01", CaseStatus.EDITING))
+
+        val viewModel = createViewModel()
+        keepStateHot(viewModel)
+        advanceUntilIdle()
+
+        assertEquals(emptyList<HomeCaseItem>(), viewModel.uiState.value.investigatingCases)
+    }
+
+    @Test
+    fun `el estado se actualiza cuando cambian los datos`() = runTest {
+        SessionManager.login(1L)
+
+        val viewModel = createViewModel()
+        keepStateHot(viewModel)
+        advanceUntilIdle()
+        assertEquals(0, viewModel.uiState.value.activeCases)
+
+        caseDao.insert(case(9L, 1L, "Caso nuevo", "2025-04-01", CaseStatus.INVESTIGATING))
+        interviewDao.interviewCountForUser.value = 3
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.activeCases)
+        assertEquals(3, state.interviews)
+        assertEquals(listOf(9L), state.investigatingCases.map { it.id })
+    }
+
+    @Test
+    fun `los casos de otro usuario no se mezclan con los de la sesion actual`() = runTest {
+        SessionManager.login(1L)
+        caseDao.insert(case(1L, 1L, "Caso propio", "2025-03-01", CaseStatus.INVESTIGATING))
+        caseDao.insert(case(2L, 2L, "Caso de otro usuario", "2025-03-05", CaseStatus.INVESTIGATING))
 
         val viewModel = createViewModel()
         keepStateHot(viewModel)
         advanceUntilIdle()
 
         assertEquals(1, viewModel.uiState.value.activeCases)
-        assertEquals(emptyList<HomeCaseItem>(), viewModel.uiState.value.investigatingCases)
+        assertEquals(
+            listOf("Caso propio"),
+            viewModel.uiState.value.investigatingCases.map { it.title }
+        )
     }
 
     @Test
-    fun `el estado se actualiza cuando cambian los datos`() = runTest {
-        val viewModel = createViewModel()
-        keepStateHot(viewModel)
-        advanceUntilIdle()
-        assertEquals(0, viewModel.uiState.value.activeCases)
-
-        caseDao.activeCount.value = 4
-        interviewDao.interviewCount.value = 9
-        caseDao.investigating.value = listOf(caseRow(7L, "Caso nuevo", "2025-04-01", 0))
-        advanceUntilIdle()
-
-        val state = viewModel.uiState.value
-        assertEquals(4, state.activeCases)
-        assertEquals(9, state.interviews)
-        assertEquals(listOf(7L), state.investigatingCases.map { it.id })
-    }
-
-    @Test
-    fun `los casos cerrados se excluyen del conteo de activos`() {
+    fun `sin sesion activa usa el usuario 1 por defecto`() {
+        // SessionManager.logout() ya se llamó en setUp()
         createViewModel()
 
-        assertEquals(CaseStatus.CLOSED, caseDao.lastClosedStatus)
+        assertEquals(1L, caseDao.lastActiveUserId)
+        assertEquals(CaseStatus.CLOSED, caseDao.lastActiveClosedStatus)
     }
 
     @Test
     fun `la lista pide casos en investigacion con limite de cinco`() {
+        SessionManager.login(7L)
         createViewModel()
 
-        assertEquals(CaseStatus.INVESTIGATING, caseDao.lastRequestedStatus)
-        assertEquals(5, caseDao.lastRequestedLimit)
+        assertEquals(7L, caseDao.lastInvestigatingUserId)
+        assertEquals(CaseStatus.INVESTIGATING, caseDao.lastInvestigatingStatus)
+        assertEquals(5, caseDao.lastInvestigatingLimit)
     }
 }
