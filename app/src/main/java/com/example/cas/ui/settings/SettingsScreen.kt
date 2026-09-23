@@ -55,7 +55,6 @@ fun SettingsScreen(
             color = MaterialTheme.colorScheme.primary
         )
 
-        // Tarjeta de Perfil del Usuario
         ElevatedCard(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.large,
@@ -122,7 +121,6 @@ fun SettingsScreen(
             }
         }
 
-        // Información de la App
         ElevatedCard(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.medium,
@@ -147,7 +145,6 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Botón de Cerrar Sesión
         Button(
             onClick = {
                 viewModel.logout()

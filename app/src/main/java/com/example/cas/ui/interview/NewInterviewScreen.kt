@@ -234,7 +234,6 @@ private fun AudioRecorderCard(
         }
     }
 
-    // Libera los recursos nativos si la persona sale de la pantalla a mitad de una grabación o reproducción.
     DisposableEffect(Unit) {
         onDispose {
             mediaRecorder?.runCatching { stop(); release() }

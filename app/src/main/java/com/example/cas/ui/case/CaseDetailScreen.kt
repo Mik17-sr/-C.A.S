@@ -203,7 +203,6 @@ fun CaseDetailScreen(
                     }
                 }
                 is DetailUiState.Deleted -> {
-                    // Manejado en LaunchedEffect
                 }
             }
         }

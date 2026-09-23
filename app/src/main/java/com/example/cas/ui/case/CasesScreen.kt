@@ -67,7 +67,6 @@ fun CasesScreen(
             color = MaterialTheme.colorScheme.primary
         )
 
-        // Barra de búsqueda por título
         OutlinedTextField(
             value = searchQuery,
             onValueChange = viewModel::onSearchQueryChange,
@@ -170,7 +169,6 @@ private fun CaseItemCard(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Muestra el usuario dueño del caso
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Person,

@@ -34,7 +34,6 @@ fun AuthBackground(content: @Composable BoxScope.() -> Unit) {
                 )
             )
     ) {
-        // Decorative circles for a modern look
         DecorativeCircle(
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
             size = 300.dp,
